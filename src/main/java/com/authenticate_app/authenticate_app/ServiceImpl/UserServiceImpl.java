@@ -1,20 +1,23 @@
 package com.authenticate_app.authenticate_app.ServiceImpl;
 
+import com.authenticate_app.authenticate_app.JWT.JwtService;
 import com.authenticate_app.authenticate_app.Modal.AuthRespons;
-import com.authenticate_app.authenticate_app.Modal.Role;
 import com.authenticate_app.authenticate_app.Modal.User;
+import com.authenticate_app.authenticate_app.Repository.TokenRepository;
 import com.authenticate_app.authenticate_app.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class UserServiceImpl {
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    TokenRepository tokenRepository;
+    @Autowired
+    JwtService jwtService;
     public AuthRespons Register(User userReq){
 
         Optional<User> findUsername= Optional.ofNullable(userRepository.findByUsername(userReq.getUsername()));
@@ -27,9 +30,16 @@ public class UserServiceImpl {
         user.setFirst_name(userReq.getFirst_name());
         user.setLast_name(userReq.getLast_name());
         user.setRole(userReq.getRole());
-        String Token="validate";
         userRepository.save(user);
-        return new AuthRespons(Token,"register with success");
+
+//        Token token=new Token();
+//        String Tk=jwtService.GenerateToken(user);
+//        token.setUser(user);
+//        token.setToken(Tk);
+//        token.setLoggedout(false);
+//        tokeRepository.save(token);
+
+        return new AuthRespons("test token","register with success");
     }
     public Boolean ValidateRegistery(User userReq){
         return !userReq.getUsername().isEmpty() && !userReq.getFirst_name().isEmpty()
