@@ -2,12 +2,17 @@ package com.authenticate_app.authenticate_app.ServiceImpl;
 
 import com.authenticate_app.authenticate_app.JWT.JwtService;
 import com.authenticate_app.authenticate_app.Modal.AuthRespons;
+import com.authenticate_app.authenticate_app.Modal.Token;
 import com.authenticate_app.authenticate_app.Modal.User;
 import com.authenticate_app.authenticate_app.Repository.TokenRepository;
 import com.authenticate_app.authenticate_app.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -18,33 +23,68 @@ public class UserServiceImpl {
     TokenRepository tokenRepository;
     @Autowired
     JwtService jwtService;
+
+    @Autowired
+    AuthenticationManager authenticationManager;
+    @Autowired
+    PasswordEncoder passwordEncoder;
     public AuthRespons Register(User userReq){
 
-        Optional<User> findUsername= Optional.ofNullable(userRepository.findByUsername(userReq.getUsername()));
+        Optional<User> findUsername= userRepository.findByUsername(userReq.getUsername());
         if(findUsername.isPresent()){
             return new AuthRespons(null ,"this username is already exist");
         }
         User user=new User();
         user.setUsername(userReq.getUsername());
-        user.setPassword_user(userReq.getPassword_user());
+        user.setPassword_user(passwordEncoder.encode(userReq.getPassword()));
         user.setFirst_name(userReq.getFirst_name());
         user.setLast_name(userReq.getLast_name());
         user.setRole(userReq.getRole());
         userRepository.save(user);
+        String jwt = jwtService.generateToken(user);
 
-//        Token token=new Token();
-//        String Tk=jwtService.GenerateToken(user);
-//        token.setUser(user);
-//        token.setToken(Tk);
-//        token.setLoggedout(false);
-//        tokeRepository.save(token);
-
-        return new AuthRespons("test token","register with success");
+        saveUserToken(jwt, user);
+        return new AuthRespons(jwt,"register with success");
     }
+    public AuthRespons Login(User UserReq){
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        UserReq.getUsername(),
+                        UserReq.getPassword()
+                )
+        );
+
+        User user = userRepository.findByUsername(UserReq.getUsername()).orElseThrow();
+        String jwt = jwtService.generateToken(user);
+
+        revokeAllTokenByUser(user);
+        saveUserToken(jwt, user);
+
+        return new AuthRespons(jwt, "User login was successful");
+    }
+
     public Boolean ValidateRegistery(User userReq){
         return !userReq.getUsername().isEmpty() && !userReq.getFirst_name().isEmpty()
                 && !userReq.getLast_name().isEmpty()
                 && !userReq.getPassword_user().isEmpty() && !userReq.getRole().isEmpty();
     }
+    private void revokeAllTokenByUser(User user) {
+        List<Token> validTokens = tokenRepository.findAllTokensByUser(user.getUser_id());
+        if(validTokens.isEmpty()) {
+            return;
+        }
 
+        validTokens.forEach(t-> {
+            t.setLoggedout(true);
+        });
+
+        tokenRepository.saveAll(validTokens);
+    }
+    private void saveUserToken(String jwt, User user) {
+        Token token = new Token();
+        token.setToken(jwt);
+        token.setLoggedout(false);
+        token.setUser(user);
+        tokenRepository.save(token);
+    }
 }

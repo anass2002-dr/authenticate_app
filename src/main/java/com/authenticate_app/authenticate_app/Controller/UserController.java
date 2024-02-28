@@ -25,6 +25,10 @@ public class UserController {
         }
         return userServiceImpl.Register(userReq);
     }
+    @PostMapping("/login")
+    public AuthRespons login(@RequestBody(required = true)User  userReq){
+        return userServiceImpl.Login(userReq);
+    }
     @GetMapping("/")
     public String Index(){
         return "this is index page";

@@ -18,45 +18,62 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    public String SecretKey="4bb6d1dfbafb64a681139d1586b6f1160d18159afd57c8c79136d7490630407c";
+    private final String SECRET_KEY = "4bb6d1dfbafb64a681139d1586b6f1160d18159afd57c8c79136d7490630407c";
+    private final TokenRepository tokenRepository;
 
-    @Autowired
-    TokenRepository tokenRepository;
-    public String ExtractUsername(String Token){
-        return ExtractClaim(Token,Claims::getSubject);
-    }
-
-    public Boolean IsTokenExpired(String Token){
-        return ExtractClaim(Token,Claims::getExpiration).before(new Date());
-    }
-    public <T> T ExtractClaim(String token, Function<Claims,T> claimsFunction){
-        Claims claims=ExtractAllClaims(token);
-        return claimsFunction.apply(claims);
+    public JwtService(TokenRepository tokenRepository) {
+        this.tokenRepository = tokenRepository;
     }
 
-    public Boolean IsValideToken(String Token, UserDetails userDetails){
-        return userDetails.getUsername().equals(ExtractUsername(Token)) && !IsTokenExpired(Token);
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
     }
-    public Claims ExtractAllClaims(String token){
+
+
+    public boolean isValid(String token, UserDetails user) {
+        String username = extractUsername(token);
+
+
+        return (username.equals(user.getUsername())) && !isTokenExpired(token);
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> resolver) {
+        Claims claims = extractAllClaims(token);
+        return resolver.apply(claims);
+    }
+
+    private Claims extractAllClaims(String token) {
         return Jwts
                 .parser()
-                .verifyWith(signkey())
+                .verifyWith(getSigninKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
-    public String GenerateToken(User user){
-        return Jwts
+
+
+    public String generateToken(User user) {
+        String token = Jwts
                 .builder()
                 .subject(user.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis()+24*60*60*1000))
-                .signWith(signkey())
+                .expiration(new Date(System.currentTimeMillis() + 24*60*60*1000 ))
+                .signWith(getSigninKey())
                 .compact();
 
+        return token;
     }
-    public SecretKey signkey(){
-        byte [] keybytes= Decoders.BASE64.decode(SecretKey);
-        return Keys.hmacShaKeyFor(keybytes);
+
+    private SecretKey getSigninKey() {
+        byte[] keyBytes = Decoders.BASE64URL.decode(SECRET_KEY);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 }
