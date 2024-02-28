@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.XSlf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -37,8 +40,10 @@ public class JwtFilter extends OncePerRequestFilter {
             filterChain.doFilter(request,response);
             return;
         }
-        String Token=autheader.substring(autheader.length());
+        String Token=autheader.substring(7);
         String username=jwtService.extractUsername(Token);
+        log.info(Token);
+        log.info(username);
         if(username!=null && SecurityContextHolder.getContext().getAuthentication()==null){
             UserDetails userDetail=userDetailServiceImp.loadUserByUsername(username);
             if(jwtService.isValid(Token,userDetail)){

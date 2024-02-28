@@ -12,8 +12,12 @@ public class DemoController {
         return ResponseEntity.ok("Hello from secured url");
     }
 
-    @GetMapping("/admin_only")
+    @GetMapping("/admin")
     public ResponseEntity<String> adminOnly() {
         return ResponseEntity.ok("Hello from admin only url");
+    }
+    @GetMapping("/user")
+    public ResponseEntity<String> user_only() {
+        return ResponseEntity.ok("Hello from user only url");
     }
 }

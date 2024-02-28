@@ -32,9 +32,10 @@ public class JwtService {
 
     public boolean isValid(String token, UserDetails user) {
         String username = extractUsername(token);
+        boolean validToken = tokenRepository
+                .findByToken(token).map(t -> !t.getLoggedout()).orElse(false);
 
-
-        return (username.equals(user.getUsername())) && !isTokenExpired(token);
+        return (username.equals(user.getUsername())) && !isTokenExpired(token) && validToken;
     }
 
     private boolean isTokenExpired(String token) {
@@ -51,6 +52,13 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
+        if (token == null || token.isEmpty()) {
+            // Handle the case where the token is null or empty
+            // You can throw an exception, log an error, or return null depending on your requirements
+            // For example:
+            throw new IllegalArgumentException("Token cannot be null or empty");
+        }
+
         return Jwts
                 .parser()
                 .verifyWith(getSigninKey())

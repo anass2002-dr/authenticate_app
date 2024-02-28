@@ -43,9 +43,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                         req->req.requestMatchers("/login/**","/register/**")
                                 .permitAll()
-                                .requestMatchers("/admin_only/**").hasAuthority("ADMIN")
-                                .anyRequest()
-                                .authenticated()
+                                .requestMatchers("/admin/**").hasAuthority("admin")
+                                .requestMatchers("user/**").hasAuthority("user")
+                                .anyRequest().permitAll()
+
                 ).userDetailsService(userDetailsServiceImp)
                 .sessionManagement(session->session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
